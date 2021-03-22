@@ -26,7 +26,7 @@ class OccCatAttrClassifier(nn.Module):
         cat_noise_shape = self.cat_noise_estimate.shape
         self.cat_noise_transition = nn.Linear(cat_noise_shape[0], cat_noise_shape[1], bias=False)
         with torch.no_grad():
-            self.cat_noise_transition.weight.copy_(self.cat_noise_estimate)
+            self.cat_noise_transition.weight.copy_(self.cat_noise_estimate) # 初始化认为定义的矩阵，copy_是inplace操作
 
         self.attr_noise_transitions = []
         for each in self.attr_noise_estimate_list:
@@ -59,7 +59,7 @@ class OccCatAttrClassifier(nn.Module):
             self.occW = nn.Linear(self.occ_ttl_fea_len+self.context_fea_len, conf["mid_layer"])
         else:
             self.occW = nn.Linear(self.occ_ttl_fea_len, conf["mid_layer"])
-        self.occ_classifier = nn.Sequential(
+        self.occ_classifier = nn.Sequential( # 不同的classifier文件
             nn.Dropout(p=0.5),
             nn.Linear(512, conf["mid_layer"]),
             nn.Linear(conf["mid_layer"], conf["num_occasion"])
@@ -143,7 +143,7 @@ class OccCatAttrClassifier(nn.Module):
         else:
             occ_fea = self.occW(whole_img_fea)
         cat_fea = self.catW(cloth_feas)# [20, 5, 512]
-        cat_fea_input = cat_fea.contiguous().view(cat_fea.shape[0]*cat_fea.shape[1], -1) # [100, 512]
+        cat_fea_input = cat_fea.contiguous().view(cat_fea.shape[0]*cat_fea.shape[1], -1) # [100, 512] reshape以后就需要contiguous
         cat_fea_input = cat_fea_input.unsqueeze(0)
              
         occ_res = self.occ_classifier(occ_fea)
@@ -193,7 +193,7 @@ class OccCatAttrClassifier(nn.Module):
         if self.conf["noise_cancel_method"] == "forward":
             ori_cat_losses = F.cross_entropy(cat_pred, cat_true, reduction="none")
             #modified_cat_losses = F.cross_entropy(torch.mm(cat_pred, self.cat_noise_estimate), cat_true, reduction="none")
-            modified_cat_losses = F.cross_entropy(self.cat_noise_transition(cat_pred), cat_true, reduction="none")
+            modified_cat_losses = F.cross_entropy(self.cat_noise_transition(cat_pred), cat_true, reduction="none") # 同步训练其中的一个transition matrics
             ori_cat_losses = ori_cat_losses.view(cat_res_shape[0], cat_res_shape[1])
             modified_cat_losses = modified_cat_losses.view(cat_res_shape[0], cat_res_shape[1])
 
