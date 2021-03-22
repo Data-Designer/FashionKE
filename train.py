@@ -73,7 +73,7 @@ def train_fashion_recognition(conf):
         {'params': model.attr_noise_transitions.parameters(), 'lr': 0.001 * lr},
         {'params': model.cat_noise_transition.parameters(), 'lr': 0.001 * lr}
     ]
-    optimizer = torch.optim.SGD(params, lr=lr, momentum=conf["momentum"])
+    optimizer = torch.optim.SGD(params, lr=lr, momentum=conf["momentum"]) # 这种有不同学习率的定义方式很好玩啊，每隔step_size次做一次学习率的更新
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=int(conf["lr_decay_interval"]*len(train_dataloader)), gamma=conf["lr_decay_gamma"])
 
     best_occ_acc = 0.0
@@ -116,7 +116,7 @@ def train_fashion_recognition(conf):
             occ_loss, cat_losses, attr_losses = model(whole_img, imgs, occ, attr_val, cats, season, age, gender, country, text)
 
             occ_loss /= conf["batch_size"]
-            if conf["noise_cancel_method"] == "forward":
+            if conf["noise_cancel_method"] == "forward": # 这里应该是对不同的输入有标识（一个batch中同时包含batch_size_clean和batch_size_machine），machine处理过的就会多加一个线性层我猜。
                 ori_cat_losses, modified_cat_losses = cat_losses
                 ori_attr_losses, modified_attr_losses = attr_losses
 
@@ -207,7 +207,7 @@ def train_fashion_recognition(conf):
             loss.backward()
             optimizer.step()
 
-            if (batch_cnt+1) % int(conf["test_interval"]*len(train_dataloader)) == 0:
+            if (batch_cnt+1) % int(conf["test_interval"]*len(train_dataloader)) == 0: # 下面是test
                 #import ipdb
                 #ipdb.set_trace()
                 print("\n\nstart to test, context: %s, loss: %s" %(conf["context"], conf["loss"]))
@@ -309,7 +309,7 @@ def test_fashion_recognition(model, dataset, conf):
 
 
 def main():
-    conf = yaml.load(open("./config.yaml"))
+    conf = yaml.load(open("./config.yaml")) # yaml配置参数用字典形式存储。
     assert conf["noise_ratio"] in [0.0, 0.1, 0.3, 0.5, 0.7]
 
     train_fashion_recognition(conf)
